@@ -1,0 +1,88 @@
+Assignment #1:
+
+
+This assignment will help you gain hands on experience on Git and GitHub.
+
+
+1. Install git on your laptop
+
+2. Create an account on GitHub
+
+3. Initialize a new repository on your laptop.
+
+    	Hint : Create a folder and execute "git init" inside the new folder
+
+4. Create four files and make four commits.
+    
+	Hint : Execute "git commit -am <commit message>" each time after creating one file.
+
+5. Create a new repository on GitHub
+
+6. Push the repository on your laptop to github
+    
+	Hint: Copy paste the two commands shown on GitHub
+
+
+Assignment# 2:
+
+
+In this assignment you will learn how to set up Java Development Environment. It is required that, as a Devops engineer you know how to set up development environments for atleast all the popular languages. Since Java is the most popular among all the languages we will learn how to set up development environment for Java platform.
+
+
+
+1.  Install JDK 1.8
+Note : JDK 1.8 is also referred as JDK8. Do not get confused if you see both versions on internet.
+
+2.  Install Eclipse Neon.2 (4.6.2) on your windows machines.
+
+3.  Create a simple Maven project in eclipse.
+
+Assignment 3:
+In this assignment you will practice creating branches and learn how to  create pull request.
+
+
+Tasks:
+
+Git :
+
+
+1.    Create a branch on the repository
+
+2.    Add a new file to the branch
+
+3.    Commit changes to the new branch
+
+4.    Push the changes to remote repository
+
+5.    Create a pull request to merge new branch to master branch
+
+6.    Merge the pull request to master branch
+
+7.    Optional : Repeat this process couple of time to get good hands on 
+
+
+
+Maven:
+
+
+1.    Create a sample maven project
+
+2.    Install maven in your machine
+
+3.    Run all maven goals
+
+4.    Goals : validate, compile, test, package, install
+
+5.    Check if .jar file is created in target/ folder in the root of the project
+
+Assignment #5:
+
+In this assignment you will revisit the definition, purpose and functionality of Maven.
+
+Please answer below questions. Limit your answer to a maximum of 10 sentenses.
+
+1.	What is Maven? What are the steps to install Maven on Windows machine?
+2.	List all the goals in Maven?
+3.	List the goals that will be executed when you run “mvn install” command?
+4.	What are dependencies in Java and how to add dependencies to an application using Maven?
+5.	What are plugins in Maven and how to add a new plugin to Maven?

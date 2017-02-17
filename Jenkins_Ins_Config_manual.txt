@@ -1,0 +1,286 @@
+Jenkins installation manual
+
+Pre req's
+1. Virtual Box
+2. Centos 7
+3. Apache tomcat
+4. Jenkins
+
+Procedure
+1. Created a new vm in virtual box "Jenkins build server" allocated 3GB of ram and changed the network to "Bridged mode" linking "Intel dual band wireless" AC as the adapter
+2. Open the VM and directed the path to centos ISO and cofigured the pre requisites "Installation prereq", "NETWORK" in the next screen it popped up for ROOT Password and username creation.
+3. I have only assigned a root password.
+4. Installation is completed now trying to check the network connectivity to outside world and internal network.
+
+All the operation performed from here are done in ROOT 
+
+5. Pinged the internal network VM received the reply and the pinged external network working perfectly till now.
+6. Trying to update centos -- failed
+7. tried ping google.com --failed
+8. Browsed for some solutions over net -- 
+Update /etc/sysconfig/network-scripts/ifcfg-enp03 file with NM_CONTROLLED=no
+Then updated /etc/resolv.conf file with the dns entries 
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+9. tried to ping google.com again now it worked it resolved the public ip.
+10. now trying to update centos7 - yum -y update -- Update SUCCESSFULL
+
+---------Apache installation-----------
+
+1. Installing apache tomcat -- version 8 https://www.vultr.com/docs/how-to-install-apache-tomcat-8-on-centos-7
+2. As per the process first installing java jdk 1.8.0 as per the steps Command: yum install java-1.8.0-openjdk.x86_64 -- Java installation successfull.
+3. checking java version : $ java --version
+	openjdk version "1.8.0_121"
+	OpenJDK Runtime Environment (build 1.8.0_121-b13)
+	OpenJDK 64-Bit Server VM (build 25.121-b13, mixed mode)
+
+4. Created a dedicated user for Apache Tomcat
+	For security purposes, you need to create a dedicated non-root user "tomcat" who belongs to the "tomcat" group:
+	groupadd tomcat
+	mkdir /opt/tomcat
+	useradd -s /bin/nologin -g tomcat -d /opt/tomcat tomcat
+	Note: In this fashion, you created a user "tomcat" who belongs to the group "tomcat". You cannot use this user account to log into the system. The home directory is /opt/tomcat, which is where the Apache Tomcat program will reside. 
+
+	Result : useradd: warning: the home directory already exists.
+			Not copying any file from skel directory into it.
+5. Install stable version of Apache: http://www-us.apache.org/dist/tomcat/
+   Note : Install only apache-tomcat- x.x.x.tar.gz (Do not install deployer or any others look only for apache tomcat)
+	$ wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.9/bin/apache-tomcat-8.5.9.tar.gz
+6. Wget command not found so install wget by using: $ yum install wget
+7. Re- initiating the command wget http://www-us.apache.org/dist/tomcat/tomcat-8/v8.5.9/bin/apache-tomcat-8.5.9.tar.gz
+	run $ tar -zxvf apache-tomcat-8.5.9.tar.gz -C /opt/tomcat --strip-components=1
+8. Setting up the systemd unit file for tomcat for convenience (Enter the below content in the editor and then save and quit)
+	vi /etc/systemd/system/tomcat.service
+
+	[Unit]
+	Description=Apache Tomcat Web Application Container
+	After=syslog.target network.target
+
+	[Service]
+	Type=forking
+
+	Environment=JAVA_HOME=/usr/lib/jvm/jre
+	Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+	Environment=CATALINA_HOME=/opt/tomcat
+	Environment=CATALINA_BASE=/opt/tomcat
+	Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+	Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+
+	ExecStart=/opt/tomcat/bin/startup.sh
+	ExecStop=/bin/kill -15 $MAINPID
+
+	User=tomcat
+	Group=tomcat
+
+	[Install]
+	WantedBy=multi-user.target
+9. Installing Haveged as recommended 
+	The haveged project is an attempt to provide an easy-to-use, unpredictable random number generator based upon an adaptation of the HAVEGE algorithm. Haveged was created to remedy low-entropy conditions in the Linux random device that can occur under some workloads, especially on headless servers.
+
+sudo yum install haveged
+tried installing haveged but failed-- as i did not find other people recommending this to be used skipping this step for now.
+
+10. Starting tomcat service and setting it to run on system boot.
+$ systemctl start tomcat.service  --FAILED
+	Thought it was java issue so checked cross verified the path in vi systemd/system/tomcat.service
+	path seems to be fine, trying for more solutions.
+	Finally found the solution
+	Solution: Edited the editor vi systemd/system/tomcat.service
+		Java path added /usr/lib/jvm/jre-1.8.0-openjdk
+		Comment out using: #Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC
+11. Now giving a try by starting tomcat: systemctl start tomcat.service -- Success
+12. Checking the status: Systemctl status tomcat.service
+13. Enabling apache tomcat service to start while system reboot
+	$ systemctl enable tomcat.service
+14. To see the tomcat in the web browser we need to open a port in the machine to access it the service tomcat.
+	$ firewall-cmd --permanent --add-port=8081/tcp
+	assigned 8081 http port to go on the browser
+	reloading firewall
+	$ firewall-cmd --reload
+	successful
+15. Testing the service in the web browser -- failed
+	port issue in the tomcat log:
+	Changed apache default port number from 8080 to 8081 in (cd /opt/tomcat/conf/server.xml)
+	<Connector port="8081" protocol="HTTP/1.1"
+	save the changes
+	restart tomcat service: systemctl restart tomcat.service
+
+	----------PAGE LOAD SUCCESSFUL-------
+
+------------------JENKINS Installation -----------------
+
+1. After completing the installation of java1.8 and tomcat7
+2. Check the environment variable (Java-based applications locate the Java virtual machine properly, you need to set two environment variables: "JAVA_HOME" and "JRE_HOME".)
+	Run the below commands to verify
+	
+	sudo cp /etc/profile /etc/profile_backup
+	echo 'export JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk' | sudo tee -a /etc/profile
+	echo 'export JRE_HOME=/usr/lib/jvm/jre' | sudo tee -a /etc/profile
+	source /etc/profile
+	Finally, you can print them for review:
+
+	echo $JAVA_HOME
+	echo $JRE_HOME
+3. Install Jenkins
+
+	Use the official YUM repo to install the latest stable version of Jenkins, which is 2.32.2-1.1 at the time of Installing:
+
+	cd ~
+	sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+	sudo rpm --import http://pkg.jenkins-ci.org/redhat-stable/jenkins-ci.org.key
+	sudo yum install jenkins
+	----Successful
+4. Start the Jenkins service and set it to run at boot time:
+
+	sudo systemctl start jenkins.service
+	sudo systemctl enable jenkins.service
+
+	In order to allow visitors access to Jenkins, you need to allow inbound traffic on port 8080:
+
+	sudo firewall-cmd --zone=public --permanent --add-port=8080/tcp
+	sudo firewall-cmd --reload
+5. Now, test Jenkins by visiting the following address from your web browser:http://192.168.1.226:8080
+
+		------Successfull installation of jenkins----------
+
+Confirguring Jenkins
+1. When logged in to webportal jenkins shows a message to unlock and the password is at /var/lib/jenkins/secrets/initialAdminPassword
+	 Entered password to login
+2. http://<your-Vultr-server-IP>:8080
+
+Followind the configuration steps from:  https://www.tutorialspoint.com/jenkins/index.htm
+
+3. Keyed in the password installed plugins, gave the admin user id and password.
+4. Restarted jenkins service after the plugins installation is completed.
+5. now checking on by creating new job in the jenkins. I have found the git in the source code management section.
+
+
+---------- CONFIGURING Jenkins -----------
+1. Java installation JDK http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
+2. Git Installation http://tecadmin.net/install-git-2-x-on-centos-rhel-and-fedora/
+3. Joined Centos7 to windows domain
+
+	How to join an Active Directory domain? [ URL : https://outsideit.net/realmd-sssd-ad-authentication/]
+
+	1. First of all start you will need to install the required packages:
+    
+	yum install realmd sssd oddjob oddjob-mkhomedir adcli samba-common samba-common-tools ntpdate ntp
+
+	2. Configure ntp to prevent time sync issues:
+	
+	systemctl enable ntpd.service
+	ntpdate ntp.domain
+	sysemctl start ntpd.service	
+
+	3. Join the server to the domain:
+
+	realm join --user=domainadminuser@domain domain
+
+	4. Also add the default domain suffix to the sssd configuration file:
+	
+	vim /etc/sssd/sssd.conf
+	
+		Add the following beneath [sssd]
+		 	
+		default_domain_suffix = domain
+
+	5. You can now see the machine in the AD. 
+
+			Sample sssd.conf : 
+				[sssd]
+				domains = addomain
+				config_file_version = 2
+				services = nss, pam
+				default_domain_suffix = addomain
+ 
+				[domain/addomain]
+				ad_domain = addomain
+				krb5_realm = ADDOMAIN
+				realmd_tags = manages-system joined-with-samba
+				cache_credentials = True
+				id_provider = ad
+				krb5_store_password_if_offline = True
+				default_shell = /bin/bash
+				ldap_id_mapping = True
+				use_fully_qualified_names = True
+				fallback_homedir = /home/%u@%d
+				access_provider = simple
+				simple_allow_groups = adgroup@addomain
+
+	
+
+	ISSUES Faced while joining CentOS 7 to AD [https://www.cyberciti.biz/faq/rhel-redhat-centos-7-change-hostname-command/]
+	1. hostname issue : 	$ hostnamectl
+					## OR ##
+				$ hostnamectl status
+	2. To Set host name :	# hostnamectl set-hostname Your-New-Host-Name-Here
+
+				# hostnamectl set-hostname Your-New-Host-Name-Here --static
+
+4. Now Configuring Jenkins with AD [URL: https://wiki.jenkins-ci.org/display/JENKINS/Active+Directory+Plugin ]
+
+	a. First check the ping test from jenkins server to AD both NS and IP
+	b. Open jenkins console go to Configure global security
+	c. In Security Realm Select AD  Enter the details as requested 
+		Domain name: Example.com
+		Domain Controller: DC IP:3268
+	Click on Advanced
+		Bind DN: CN=user test,CN=Users, DC=jenkinstest,DC=com (You can find this in AD --> select the user --> Double click on the user --> 
+									select Attribute editor tab --> Distinguished Name)
+		Bind Password: User password
+
+	Test the connection by entering the details if test fails try rechecking the connection between jenkins server and AD.
+
+ISSUE: If the integration fail and you are unable to login in to the jenkins server
+
+	1. find config.xml in jenkins folder
+		Easy way to find it : $ find / -type f -iname config.xml
+		if you want to find the jenkins path : $ find / -type d -name jenkins
+
+	Explanation of find command: / : indicates search from the root , type f/d: indicates file or directory, name/iname: directory/file name
+
+For more details refer this link:  https://wiki.jenkins-ci.org/display/JENKINS/Active+Directory+Plugin
+
+5. Start creating sample jobs to do so you need to configure maven and git paths.
+6. Check if they are installed by typing $ maven -version ; $ git -version
+7. if version is not displayed install them
+8. maven installation [URL: http://tecadmin.net/install-apache-maven-on-centos/]
+
+	$ cd /opt
+	$ wget http://www-eu.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+	$ sudo tar xzf apache-maven-3.3.9-bin.tar.gz
+	$ sudo ln -s apache-maven-3.3.9 maven
+	$ sudo vi /etc/profile.d/maven.sh
+
+	and add following content.
+
+	export M2_HOME=/opt/maven
+	export PATH=${M2_HOME}/bin:${PATH}
+
+	Now load the environment variables in current shell using following command.
+
+	$ source /etc/profile.d/maven.sh
+
+	Check version
+	$ mvn -version 
+
+	Result:	Apache Maven 3.3.9 (a31e8fdf433f8c3e10d3cdebad265627c3ddde99; 2016-07-12T02:28:10+05:30)
+		Maven home: /opt/maven
+		Java version: 1.8.0_101, vendor: Oracle Corporation
+		Java home: /opt/jdk1.8.0_101/jre
+		Default locale: en_US, platform encoding: UTF-8
+		OS name: "linux", version: "2.6.32.642.el6.x86_64", arch: "amd64", family: "unix"
+
+	
+9. Configure Maven: goto Manage Jenkins --> Global tool configuration --> Maven Configuration
+	Default settings provider: Settings file in the file system
+	File path: /opt/maven/bin/mvn
+
+	Default global settings provider: Global settings file on the system
+	File path: /opt/maven/conf/settings.xml
+
+10. Configure git:  goto Manage Jenkins --> Global tool configuration --> Git
+	Name: Git
+	path to Git Executable: /usr/bin/git 
+	
+	To know this path type $whereis git
