@@ -334,3 +334,16 @@ For more details refer this link:  https://wiki.jenkins-ci.org/display/JENKINS/A
 	path to Git Executable: /usr/bin/git 
 	
 	To know this path type $whereis git
+
+------------- Nodes Creation ----------------
+
+1. Create exact same machine replication the paths in the master (GIT, Maven, Java)
+2. follow the steps above to install git, maven, Java else you can also clone the master.
+3. Node creation go Manage Jenkins --> Manage node -->New node --> select Permanent Agent
+4. Enter description (Ex: Node1), Root Directory (/var/jenkins), select usage, Launch Method (SSH), Slect Credentials (Host Name, Credentials(Click on Add enter details there)), Select Availability.
+5. Save the settings
+6. Select the node and then launch it.
+7. To test it create a sample test job and run it on this new node (While creating the job select the "Restrict Where this project can be run" in general tab --> Enter the node label in Label expression field).
+8.Save the Job and run it.
+
+-----  Successfull creation ------
